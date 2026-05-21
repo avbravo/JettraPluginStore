@@ -5,7 +5,12 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.Callable;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Command(name = "jettrapluginstore", mixinStandardHelpOptions = true, version = "1.0",
         description = "Jettra Plugin Store CLI. Convert, install, and manage Jettra plugins.",
@@ -22,15 +27,65 @@ public class Main implements Callable<Integer> {
     private String legacyCommand;
 
     public static void main(String... args) {
+        if (args.length == 0) {
+            startInteractiveShell();
+            System.exit(0);
+        } else {
+            int exitCode = executeCommand(args);
+            System.exit(exitCode);
+        }
+    }
+
+    private static int executeCommand(String[] args) {
         // Support for -c <command> syntax requested by the user
         if (args.length > 0 && ("-c".equals(args[0]) || "--command".equals(args[0]))) {
             String[] newArgs = new String[args.length - 1];
             System.arraycopy(args, 1, newArgs, 0, args.length - 1);
-            int exitCode = new CommandLine(new Main()).execute(newArgs);
-            System.exit(exitCode);
+            return new CommandLine(new Main()).execute(newArgs);
         } else {
-            int exitCode = new CommandLine(new Main()).execute(args);
-            System.exit(exitCode);
+            return new CommandLine(new Main()).execute(args);
+        }
+    }
+
+    private static void startInteractiveShell() {
+        System.out.println("Jettra Plugin Store Interactive Shell");
+        System.out.println("Type 'exit' or 'quit' to close the shell.");
+        Scanner scanner = new Scanner(System.in);
+
+        java.io.File credFile = new java.io.File("jettraappstore.md");
+        if (!credFile.exists()) {
+            System.out.println("\n[Configuración Inicial] No se encontraron credenciales de GitHub.");
+            System.out.print("Ingrese su usuario de GitHub: ");
+            String user = scanner.nextLine().trim();
+            System.out.print("Ingrese su Token de Acceso Personal (PAT) de GitHub: ");
+            String pat = scanner.nextLine().trim();
+            System.out.print("Cree una frase clave (passphrase) para encriptar estas credenciales localmente: ");
+            String secret = scanner.nextLine().trim();
+            com.jettrapluginstore.config.CredentialsManager.saveCredentials(user, pat, secret);
+            System.out.println("Credenciales guardadas y encriptadas exitosamente.\n");
+        }
+
+        while (true) {
+            System.out.print("jettrapluginstore> ");
+            if (!scanner.hasNextLine()) {
+                break;
+            }
+            String line = scanner.nextLine().trim();
+            if (line.isEmpty()) {
+                continue;
+            }
+            if ("exit".equalsIgnoreCase(line) || "quit".equalsIgnoreCase(line)) {
+                break;
+            }
+
+            List<String> argList = new ArrayList<>();
+            Matcher m = Pattern.compile("([^\"\\s]\\S*|\".+?\")\\s*").matcher(line);
+            while (m.find()) {
+                argList.add(m.group(1).replace("\"", ""));
+            }
+
+            String[] cmdArgs = argList.toArray(new String[0]);
+            executeCommand(cmdArgs);
         }
     }
 

@@ -15,7 +15,7 @@ if [ $? -eq 0 ]; then
     echo "========================================="
     echo "✅ Construcción exitosa."
     echo "El archivo ejecutable JAR se encuentra en:"
-    echo "target/JettraPluginStore-1.0-SNAPSHOT-shaded.jar"
+    echo "target/JettraPluginStore-1.0-SNAPSHOT.jar"
     echo "========================================="
 else
     echo "========================================="

@@ -129,7 +129,7 @@ En la raíz del proyecto `JettraPluginStore`, puedes utilizar el script proporci
 ./build.sh
 ```
 
-Este script ejecuta `mvn clean package` y, si la compilación es exitosa, generará el archivo JAR empaquetado dentro de la carpeta `target/`. Verás un mensaje indicando la ruta exacta (generalmente `target/JettraPluginStore-1.0-SNAPSHOT-shaded.jar`).
+Este script ejecuta `mvn clean package` y, si la compilación es exitosa, generará el archivo JAR empaquetado dentro de la carpeta `target/`. Verás un mensaje indicando la ruta exacta (generalmente `target/JettraPluginStore-1.0-SNAPSHOT.jar`).
 
 ### Compilación Manual (Todas las plataformas)
 
@@ -139,7 +139,7 @@ Si prefieres usar la consola o estás en un ambiente de Windows, puedes ejecutar
 mvn clean package
 ```
 
-Una vez finalizado, busca el archivo ejecutable que termina en `-shaded.jar` en la carpeta `target/`.
+Una vez finalizado, busca el archivo ejecutable `JettraPluginStore-1.0-SNAPSHOT.jar` en la carpeta `target/`.
 
 ---
 
@@ -155,11 +155,11 @@ La forma principal de uso es invocar el archivo JAR directamente desde el direct
 2. Llama a la herramienta apuntando al archivo JAR generado:
 
 ```bash
-java -jar /ruta/a/JettraPluginStore/target/JettraPluginStore-1.0-SNAPSHOT-shaded.jar -c prepareplugin
+java -jar /ruta/a/JettraPluginStore/target/JettraPluginStore-1.0-SNAPSHOT.jar -c prepareplugin
 ```
 
 > **Consejo:** Puedes crear un alias en tu sistema operativo (`~/.bashrc` o `~/.zshrc`) para hacer que el comando sea global:
-> `alias jettrapluginstore="java -jar /ruta/a/JettraPluginStore/target/JettraPluginStore-1.0-SNAPSHOT-shaded.jar"`
+> `alias jettrapluginstore="java -jar /ruta/a/JettraPluginStore/target/JettraPluginStore-1.0-SNAPSHOT.jar"`
 > Esto te permitirá usar `jettrapluginstore -c <comando>` libremente desde cualquier carpeta.
 
 ### 2. Como Dependencia en otros Proyectos Maven
@@ -184,3 +184,68 @@ Luego, en el `pom.xml` del proyecto destino donde deseas usar sus capacidades, a
 ```
 
 A partir de este momento, podrás instanciar libremente `CredentialsManager`, `GitUtils`, o invocar las clases Command (ej. `InstallPluginCommand`) programáticamente dentro de tu propio código.
+
+### 3. Modo Shell Interactivo
+
+JettraPluginStore incluye ahora un modo de "Shell Interactivo" para facilitar la ejecución rápida de varios comandos de manera consecutiva sin necesidad de cargar la máquina virtual de Java (JVM) y picocli en cada invocación.
+
+**Uso desde la CLI Independiente:**
+Simplemente ejecuta el JAR sin proporcionar ningún parámetro:
+```bash
+java -jar /ruta/a/JettraPluginStore/target/JettraPluginStore-1.0-SNAPSHOT.jar
+```
+
+Una vez dentro, el prompt cambiará a `jettrapluginstore>`. A partir de aquí, puedes ingresar tus comandos omitiendo el llamado a la herramienta:
+```bash
+jettrapluginstore> -c createplugin -p com.mi.paquete
+jettrapluginstore> list
+jettrapluginstore> exit
+```
+Usa el comando `exit` o `quit` para salir del shell interactivo.
+
+**Uso cuando ha sido añadido como dependencia en un pom.xml:**
+Si el plugin store está como dependencia de tu proyecto (como se indica en la sección 2), puedes ejecutar su Shell Interactivo utilizando el plugin `exec-maven-plugin`. En la terminal de tu proyecto, corre el siguiente comando:
+```bash
+mvn exec:java -Dexec.mainClass="com.jettrapluginstore.Main"
+```
+Esto inicializará el Shell Interactivo directamente desde la terminal del proyecto en el cual estás trabajando.
+
+### Ejemplo Completo de Flujo de Trabajo en el Shell
+
+Imagina que deseas verificar los plugins disponibles y luego crear un nuevo plugin en tu proyecto basándote en un paquete específico. En lugar de invocar `java -jar` múltiples veces, abres el shell:
+
+```bash
+$ java -jar target/JettraPluginStore-1.0-SNAPSHOT.jar
+Jettra Plugin Store Interactive Shell
+Type 'exit' or 'quit' to close the shell.
+jettrapluginstore> 
+```
+
+**Paso 1: Listar plugins existentes en la tienda.**
+```bash
+jettrapluginstore> list
+Conectando a JettraAppStore...
+[Lista de plugins disponibles mostrada aquí]
+```
+
+**Paso 2: Preparar el plugin local.**
+Genera el `plugin-descriptor.md` en tu directorio local para configurar la información del nuevo plugin.
+```bash
+jettrapluginstore> prepareplugin
+[El sistema genera plugin-descriptor.md, lo editas en otra pestaña si es necesario]
+```
+
+**Paso 3: Convertir y subir tu plugin.**
+Utilizando el parámetro `-p`, le indicas qué paquete específico se va a extraer y subir como un plugin.
+```bash
+jettrapluginstore> createplugin -p com.miproyecto.facturacion
+Refactoring packages...
+Plugin created and uploaded successfully.
+```
+
+**Paso 4: Salir del sistema.**
+```bash
+jettrapluginstore> exit
+$
+```
+Gracias a este modo, ahorras el tiempo de inicialización de la herramienta entre cada comando sucesivo.

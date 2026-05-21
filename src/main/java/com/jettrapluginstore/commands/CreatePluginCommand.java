@@ -5,6 +5,7 @@ import com.jettrapluginstore.utils.GitUtils;
 import com.jettrapluginstore.utils.ProjectModifier;
 import org.eclipse.jgit.api.Git;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,6 +23,9 @@ import java.util.zip.ZipOutputStream;
 
 @Command(name = "createplugin", description = "Converts a Maven project to a Jettra plugin and uploads it to GitHub.")
 public class CreatePluginCommand implements Callable<Integer> {
+
+    @Option(names = {"-p", "--package"}, description = "Paquete a ser convertido en plugin")
+    private String packageToConvert;
 
     @Override
     public Integer call() throws Exception {
@@ -69,12 +73,11 @@ public class CreatePluginCommand implements Callable<Integer> {
         System.out.println("Refactoring packages...");
         Path srcMainJava = tempProjectDir.resolve("src/main/java");
         if (Files.exists(srcMainJava)) {
-            // Assume old package is the parent directory structure that matches artifactId loosely
-            // For simplicity, we just look for Main class and find its package, but here we'll just skip 
-            // complex AST refactoring and do a basic move if needed. 
-            // In a real scenario we need the old package. We'll assume com.jettra.example.
-            String oldPackage = findBasePackage(srcMainJava.toFile());
+            String oldPackage = packageToConvert != null ? packageToConvert : findBasePackage(srcMainJava.toFile());
             if (oldPackage != null) {
+                if (packageToConvert != null) {
+                    keepOnlyPackage(srcMainJava, packageToConvert);
+                }
                 ProjectModifier.refactorPackages(srcMainJava, oldPackage, pluginPackage);
             }
         }
@@ -196,6 +199,24 @@ public class CreatePluginCommand implements Callable<Integer> {
     private String findBasePackage(File dir) {
         // Implementation simplified for brevity
         return "com.jettra.example";
+    }
+
+    private void keepOnlyPackage(Path srcMainJava, String pkg) throws Exception {
+        String pkgPath = pkg.replace('.', '/');
+        Path targetDir = srcMainJava.resolve(pkgPath);
+        
+        if (Files.exists(targetDir)) {
+            Path tempSafe = Files.createTempDirectory("safe_pkg");
+            copyProject(targetDir.toFile(), tempSafe.toFile());
+            
+            GitUtils.deleteDirectory(srcMainJava.toFile());
+            Files.createDirectories(targetDir);
+            
+            copyProject(tempSafe.toFile(), targetDir.toFile());
+            GitUtils.deleteDirectory(tempSafe.toFile());
+        } else {
+            System.err.println("Warning: Package " + pkg + " not found in src/main/java.");
+        }
     }
 
     private void zipDirectory(File dir, File zipFile) throws Exception {
