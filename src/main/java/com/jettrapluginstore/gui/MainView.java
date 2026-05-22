@@ -14,6 +14,7 @@ import javafx.stage.Stage;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -30,8 +31,11 @@ public class MainView extends BorderPane {
     private Button btnDashboard;
     private Button btnPrepare;
     private Button btnCreate;
+    private Button btnStarted;
+    private Button btnExplorer;
     private Button btnBrowse;
     private Button btnInstalled;
+    private Button btnManager;
     private Button btnSettings;
     
     // Core Layout Panels
@@ -62,10 +66,11 @@ public class MainView extends BorderPane {
         showDashboardPane();
         
         // Try loading current directory as a project
-        detectProject(new File("."));
+        Preferences prefs = Preferences.userNodeForPackage(MainView.class);
+        String lastProject = prefs.get("lastProjectDir", ".");
+        detectProject(new File(lastProject));
 
         // Load saved theme preference when Scene is available
-        Preferences prefs = Preferences.userNodeForPackage(MainView.class);
         sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene != null) {
                 String currentTheme = prefs.get("theme", "dark");
@@ -84,17 +89,23 @@ public class MainView extends BorderPane {
         
         btnDashboard = createSidebarButton("📊 Dashboard");
         btnPrepare = createSidebarButton("🛠️ Prepare Descriptor");
+        btnStarted = createSidebarButton("🚀 Started");
         btnCreate = createSidebarButton("📦 Package & Upload");
+        btnExplorer = createSidebarButton("📁 File Explorer");
         btnBrowse = createSidebarButton("🌐 Browse AppStore");
         btnInstalled = createSidebarButton("💾 Installed Plugins");
+        btnManager = createSidebarButton("🛠️ Manager");
         btnSettings = createSidebarButton("⚙️ Credentials & Keys");
         
         // Navigation Actions
         btnDashboard.setOnAction(e -> showDashboardPane());
+        btnStarted.setOnAction(e -> showStartedPane());
         btnPrepare.setOnAction(e -> showPreparePane());
         btnCreate.setOnAction(e -> showCreatePane());
+        btnExplorer.setOnAction(e -> showExplorerPane());
         btnBrowse.setOnAction(e -> showBrowsePane());
         btnInstalled.setOnAction(e -> showInstalledPane());
+        btnManager.setOnAction(e -> showManagerPane());
         btnSettings.setOnAction(e -> showSettingsPane());
         
         // Theme Selector
@@ -115,7 +126,7 @@ public class MainView extends BorderPane {
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         
-        sidebarBox.getChildren().addAll(lblBrand, btnDashboard, btnPrepare, btnCreate, btnBrowse, btnInstalled, new Separator(), btnSettings, spacer, new Label("Appearance:"), cmbTheme);
+        sidebarBox.getChildren().addAll(lblBrand, btnDashboard, btnStarted, btnExplorer, btnPrepare, btnCreate, btnBrowse, btnInstalled, btnManager, new Separator(), btnSettings, spacer, new Label("Appearance:"), cmbTheme);
         return sidebarBox;
     }
 
@@ -147,10 +158,13 @@ public class MainView extends BorderPane {
     
     private void setSidebarActive(Button activeButton) {
         btnDashboard.getStyleClass().remove("sidebar-btn-active");
+        if (btnStarted != null) btnStarted.getStyleClass().remove("sidebar-btn-active");
         btnPrepare.getStyleClass().remove("sidebar-btn-active");
         btnCreate.getStyleClass().remove("sidebar-btn-active");
+        if (btnExplorer != null) btnExplorer.getStyleClass().remove("sidebar-btn-active");
         btnBrowse.getStyleClass().remove("sidebar-btn-active");
         btnInstalled.getStyleClass().remove("sidebar-btn-active");
+        if (btnManager != null) btnManager.getStyleClass().remove("sidebar-btn-active");
         btnSettings.getStyleClass().remove("sidebar-btn-active");
         
         activeButton.getStyleClass().add("sidebar-btn-active");
@@ -163,24 +177,33 @@ public class MainView extends BorderPane {
     
     private void detectProject(File dir) {
         selectedProjectDir = dir;
-        File pomFile = new File(dir, "pom.xml");
-        if (pomFile.exists()) {
-            lblSelectedProjectName.setText(dir.getName().toUpperCase() + " (Maven Project)");
-            lblSelectedProjectPath.setText(dir.getAbsolutePath());
-            
-            // simple parsing of artifactId and version
-            try {
-                String pomText = new String(Files.readAllBytes(pomFile.toPath()), StandardCharsets.UTF_8);
-                String artId = pomText.contains("<artifactId>") ? 
-                        pomText.substring(pomText.indexOf("<artifactId>") + 12, pomText.indexOf("</artifactId>")) : "unknown";
-                String ver = pomText.contains("<version>") ? 
-                        pomText.substring(pomText.indexOf("<version>") + 9, pomText.indexOf("</version>")) : "1.0-SNAPSHOT";
+        Preferences prefs = Preferences.userNodeForPackage(MainView.class);
+        if (dir != null) {
+            prefs.put("lastProjectDir", dir.getAbsolutePath());
+            File pomFile = new File(dir, "pom.xml");
+            if (pomFile.exists()) {
+                lblSelectedProjectName.setText(dir.getName().toUpperCase() + " (Maven Project)");
+                lblSelectedProjectPath.setText(dir.getAbsolutePath());
                 
-                lblProjectArtifact.setText(artId.trim());
-                lblProjectVersion.setText(ver.trim());
-            } catch (Exception e) {
-                lblProjectArtifact.setText("unknown");
-                lblProjectVersion.setText("1.0-SNAPSHOT");
+                // simple parsing of artifactId and version
+                try {
+                    String pomText = new String(Files.readAllBytes(pomFile.toPath()), StandardCharsets.UTF_8);
+                    String artId = pomText.contains("<artifactId>") ? 
+                            pomText.substring(pomText.indexOf("<artifactId>") + 12, pomText.indexOf("</artifactId>")) : "unknown";
+                    String ver = pomText.contains("<version>") ? 
+                            pomText.substring(pomText.indexOf("<version>") + 9, pomText.indexOf("</version>")) : "1.0-SNAPSHOT";
+                    
+                    lblProjectArtifact.setText(artId.trim());
+                    lblProjectVersion.setText(ver.trim());
+                } catch (Exception e) {
+                    lblProjectArtifact.setText("unknown");
+                    lblProjectVersion.setText("1.0-SNAPSHOT");
+                }
+            } else {
+                lblSelectedProjectName.setText("No Jettra project selected");
+                lblSelectedProjectPath.setText("Click the button below to browse and select a valid Jettra Maven project directory.");
+                lblProjectArtifact.setText("-");
+                lblProjectVersion.setText("-");
             }
         } else {
             lblSelectedProjectName.setText("No Jettra project selected");
@@ -245,7 +268,167 @@ public class MainView extends BorderPane {
             }
         });
         
-        root.getChildren().addAll(title, subtitle, infoCard, btnBrowseProj);
+        Button btnClearProj = new Button("🧹 Limpiar Sesión");
+        btnClearProj.getStyleClass().add("cyber-btn-danger");
+        btnClearProj.setOnAction(e -> {
+            Preferences prefs = Preferences.userNodeForPackage(MainView.class);
+            prefs.remove("lastProjectDir");
+            detectProject(null);
+        });
+        
+        HBox dashButtons = new HBox(15, btnBrowseProj, btnClearProj);
+        
+        root.getChildren().addAll(title, subtitle, infoCard, dashButtons);
+        switchContent(root);
+    }
+    
+    // --- 1.5 Started Pane ---
+    private void showStartedPane() {
+        setSidebarActive(btnStarted);
+        
+        VBox root = new VBox(15);
+        root.getStyleClass().add("glass-pane");
+        
+        Label title = new Label("Jettra Starter");
+        title.getStyleClass().add("label-title");
+        Label subtitle = new Label("Generate a new optimized Jettra web application.");
+        subtitle.getStyleClass().add("label-subtitle");
+        
+        ScrollPane formScroll = new ScrollPane();
+        formScroll.setFitToWidth(true);
+        VBox form = new VBox(15);
+        form.setPadding(new Insets(10));
+        
+        TextField txtGroup = new TextField("com.example");
+        TextField txtArtifact = new TextField("mywebapp");
+        TextField txtVersion = new TextField("1.0-SNAPSHOT");
+        TextField txtJavaVersion = new TextField("25");
+        TextField txtDeps = new TextField("JettraServer, JettraWUI, JettraReport");
+        
+        form.getChildren().addAll(
+                new Label("GroupId:"), txtGroup,
+                new Label("ArtifactId:"), txtArtifact,
+                new Label("Version:"), txtVersion,
+                new Label("Java Version:"), txtJavaVersion,
+                new Label("Dependencies (comma separated):"), txtDeps,
+                new Separator()
+        );
+        
+        form.getChildren().add(new Label("--- jettra-config.properties ---"));
+        
+        TextField txtTitle = new TextField("Jettra Web 3D Future Dashboard");
+        TextField txtShortTitle = new TextField("J");
+        TextField txtPort = new TextField("8080");
+        TextField txtContext = new TextField("/mywebapp");
+        
+        // Auto-update context path based on ArtifactId
+        txtArtifact.textProperty().addListener((obs, oldV, newV) -> {
+            if (newV != null && !newV.isEmpty()) {
+                txtContext.setText("/" + newV.toLowerCase().replaceAll("[^a-z0-9]", ""));
+            }
+        });
+        
+        CheckBox chkCompact = new CheckBox("Compact Header");
+        chkCompact.setSelected(true);
+        TextField txtTimeout = new TextField("0");
+        TextField txtLang = new TextField("es");
+        TextField txtTheme = new TextField("3d");
+        CheckBox chkAnimated = new CheckBox("Animated");
+        chkAnimated.setSelected(false);
+        CheckBox chkHotReload = new CheckBox("Hot Reload");
+        chkHotReload.setSelected(true);
+        
+        form.getChildren().addAll(
+                new Label("App Title:"), txtTitle,
+                new Label("Short Title:"), txtShortTitle,
+                new Label("Server Port:"), txtPort,
+                new Label("Context Path:"), txtContext,
+                chkCompact,
+                new Label("Session Timeout:"), txtTimeout,
+                new Label("Language:"), txtLang,
+                new Label("Theme:"), txtTheme,
+                chkAnimated,
+                chkHotReload
+        );
+        
+        form.getChildren().add(new Separator());
+        
+        Label lblTargetLabel = new Label("Output Directory:");
+        lblTargetLabel.setStyle("-fx-font-weight: bold;");
+        
+        File[] targetDirectory = new File[1];
+        if (selectedProjectDir != null && selectedProjectDir.exists()) {
+            targetDirectory[0] = selectedProjectDir;
+        }
+        
+        Label lblTargetDir = new Label(targetDirectory[0] != null ? targetDirectory[0].getAbsolutePath() : "No directory selected");
+        lblTargetDir.setStyle("-fx-text-fill: #94a3b8;");
+        lblTargetDir.setWrapText(true);
+        
+        Button btnSelectDir = new Button("📂 Select Output Directory");
+        btnSelectDir.getStyleClass().add("cyber-btn-secondary");
+        btnSelectDir.setOnAction(ev -> {
+            DirectoryChooser chooser = new DirectoryChooser();
+            chooser.setTitle("Select Output Directory for New Project");
+            File dir = chooser.showDialog(new Stage());
+            if (dir != null) {
+                targetDirectory[0] = dir;
+                lblTargetDir.setText(dir.getAbsolutePath());
+            }
+        });
+        
+        form.getChildren().addAll(lblTargetLabel, lblTargetDir, btnSelectDir);
+        
+        formScroll.setContent(form);
+        
+        Button btnGenerate = new Button("🚀 Generate Project");
+        btnGenerate.getStyleClass().add("cyber-btn");
+        
+        Label lblStatus = new Label("");
+        lblStatus.setStyle("-fx-font-weight: bold;");
+        
+        btnGenerate.setOnAction(e -> {
+            try {
+                if (targetDirectory[0] == null || !targetDirectory[0].exists() || !targetDirectory[0].isDirectory()) {
+                    lblStatus.setText("❌ Error: You must select a valid output directory.");
+                    lblStatus.setTextFill(Color.RED);
+                    return;
+                }
+                
+                Map<String, String> props = new HashMap<>();
+                props.put("app.title", txtTitle.getText());
+                props.put("app.shorttitle", txtShortTitle.getText());
+                props.put("server.port", txtPort.getText());
+                props.put("server.contextpath", txtContext.getText());
+                props.put("server.compactheader", String.valueOf(chkCompact.isSelected()));
+                props.put("server.session.timeout", txtTimeout.getText());
+                props.put("app.language", txtLang.getText());
+                props.put("app.theme", txtTheme.getText());
+                props.put("app.animated", String.valueOf(chkAnimated.isSelected()));
+                props.put("server.hotreload", String.valueOf(chkHotReload.isSelected()));
+                
+                com.jettrapluginstore.utils.ProjectGenerator.generateProject(
+                        targetDirectory[0], 
+                        txtGroup.getText(), 
+                        txtArtifact.getText(), 
+                        txtVersion.getText(), 
+                        txtJavaVersion.getText(), 
+                        txtDeps.getText(), 
+                        props
+                );
+                
+                File generatedProject = new File(targetDirectory[0], txtArtifact.getText());
+                detectProject(generatedProject);
+                
+                lblStatus.setText("✅ Project " + txtArtifact.getText() + " generated successfully!");
+                lblStatus.setTextFill(Color.web("#10b981"));
+            } catch (Exception ex) {
+                lblStatus.setText("❌ Error: " + ex.getMessage());
+                lblStatus.setTextFill(Color.RED);
+            }
+        });
+        
+        root.getChildren().addAll(title, subtitle, formScroll, btnGenerate, lblStatus);
         switchContent(root);
     }
     
@@ -274,7 +457,12 @@ public class MainView extends BorderPane {
         TextField txtWeb = new TextField("https://github.com/avbravo");
         TextArea txtDesc = new TextArea("Módulo interactivo para gestión avanzada de facturas en Jettra.");
         txtDesc.setPrefHeight(80);
-        TextField txtDeps = new TextField("jettraServer, JettraReport, JettraWUI");
+        
+        String initialDeps = "jettraServer, JettraReport, JettraWUI";
+        if (selectedProjectDir != null && new File(selectedProjectDir, "pom.xml").exists()) {
+            initialDeps = parseDependenciesFromPom(new File(selectedProjectDir, "pom.xml"));
+        }
+        TextField txtDeps = new TextField(initialDeps);
         
         form.getChildren().addAll(
                 new Label("Plugin Name:"), txtName,
@@ -325,6 +513,34 @@ public class MainView extends BorderPane {
         
         root.getChildren().addAll(title, subtitle, formScroll, btnGenerate, statusLabel);
         switchContent(root);
+    }
+    
+    private String parseDependenciesFromPom(File pomFile) {
+        try {
+            String content = new String(Files.readAllBytes(pomFile.toPath()), StandardCharsets.UTF_8);
+            int depsStart = content.indexOf("<dependencies>");
+            int depsEnd = content.indexOf("</dependencies>");
+            if (depsStart > -1 && depsEnd > depsStart) {
+                String depsSection = content.substring(depsStart, depsEnd);
+                List<String> deps = new ArrayList<>();
+                int idx = 0;
+                while ((idx = depsSection.indexOf("<artifactId>", idx)) > -1) {
+                    int endIdx = depsSection.indexOf("</artifactId>", idx);
+                    if (endIdx > idx) {
+                        deps.add(depsSection.substring(idx + 12, endIdx).trim());
+                        idx = endIdx;
+                    } else {
+                        break;
+                    }
+                }
+                if (!deps.isEmpty()) {
+                    return String.join(", ", deps);
+                }
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+        return "jettraServer, JettraReport, JettraWUI";
     }
     
     // --- 3. Create/Upload Pane ---
@@ -591,6 +807,112 @@ public class MainView extends BorderPane {
         switchContent(root);
     }
     
+    // --- 4.5 Explorer Pane ---
+    private void showExplorerPane() {
+        setSidebarActive(btnExplorer);
+        
+        VBox root = new VBox(15);
+        root.getStyleClass().add("glass-pane");
+        
+        Label title = new Label("Project File Explorer");
+        title.getStyleClass().add("label-title");
+        Label subtitle = new Label("Explore and edit the structure of the selected project.");
+        subtitle.getStyleClass().add("label-subtitle");
+        
+        SplitPane splitPane = new SplitPane();
+        splitPane.setDividerPositions(0.3);
+        VBox.setVgrow(splitPane, Priority.ALWAYS);
+        
+        TreeView<File> treeView = new TreeView<>();
+        treeView.setCellFactory(tv -> new javafx.scene.control.TreeCell<File>() {
+            @Override
+            protected void updateItem(File item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(item.getName());
+                }
+            }
+        });
+        
+        if (selectedProjectDir != null && selectedProjectDir.exists() && selectedProjectDir.isDirectory()) {
+            TreeItem<File> rootItem = createTreeItem(selectedProjectDir);
+            treeView.setRoot(rootItem);
+        } else {
+            treeView.setRoot(new TreeItem<>(new File("No project selected")));
+        }
+        
+        VBox rightPane = new VBox(10);
+        Label lblEditing = new Label("No file selected.");
+        lblEditing.setStyle("-fx-font-weight: bold; -fx-text-fill: #94a3b8;");
+        
+        TextArea txtEditor = new TextArea();
+        txtEditor.getStyleClass().add("cyber-textarea");
+        txtEditor.setStyle("-fx-font-family: monospace;");
+        VBox.setVgrow(txtEditor, Priority.ALWAYS);
+        
+        Button btnSave = new Button("💾 Save Changes");
+        btnSave.getStyleClass().add("cyber-btn");
+        btnSave.setDisable(true);
+        
+        File[] currentEditingFile = new File[1];
+        
+        treeView.setOnMouseClicked(e -> {
+            if (e.getClickCount() == 2) {
+                TreeItem<File> item = treeView.getSelectionModel().getSelectedItem();
+                if (item != null && item.getValue() != null && item.getValue().isFile()) {
+                    File file = item.getValue();
+                    try {
+                        String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
+                        txtEditor.setText(content);
+                        lblEditing.setText("Editing: " + file.getAbsolutePath());
+                        currentEditingFile[0] = file;
+                        btnSave.setDisable(false);
+                    } catch (IOException ex) {
+                        showAlert("Error", "Could not read file: " + ex.getMessage());
+                    }
+                }
+            }
+        });
+        
+        btnSave.setOnAction(e -> {
+            if (currentEditingFile[0] != null) {
+                try {
+                    Files.write(currentEditingFile[0].toPath(), txtEditor.getText().getBytes(StandardCharsets.UTF_8));
+                    showAlert("Success", "File saved successfully.");
+                } catch (IOException ex) {
+                    showAlert("Error", "Could not save file: " + ex.getMessage());
+                }
+            }
+        });
+        
+        rightPane.getChildren().addAll(lblEditing, txtEditor, btnSave);
+        splitPane.getItems().addAll(treeView, rightPane);
+        
+        root.getChildren().addAll(title, subtitle, splitPane);
+        switchContent(root);
+    }
+    
+    private TreeItem<File> createTreeItem(File f) {
+        TreeItem<File> item = new TreeItem<>(f);
+        if (f.isDirectory()) {
+            item.setExpanded(true);
+            File[] files = f.listFiles();
+            if (files != null) {
+                Arrays.sort(files, (a, b) -> {
+                    if (a.isDirectory() && !b.isDirectory()) return -1;
+                    if (!a.isDirectory() && b.isDirectory()) return 1;
+                    return a.getName().compareToIgnoreCase(b.getName());
+                });
+                for (File child : files) {
+                    item.getChildren().add(createTreeItem(child));
+                }
+            }
+        }
+        return item;
+    }
+    
     // --- 5. Installed Manager Pane ---
     private void showInstalledPane() {
         setSidebarActive(btnInstalled);
@@ -705,6 +1027,150 @@ public class MainView extends BorderPane {
         
         root.getChildren().addAll(title, subtitle, listContainer);
         switchContent(root);
+    }
+    
+    // --- 5.5 AppStore Manager Pane ---
+    private void showManagerPane() {
+        setSidebarActive(btnManager);
+        
+        VBox root = new VBox(15);
+        root.getStyleClass().add("glass-pane");
+        
+        Label title = new Label("AppStore Manager");
+        title.getStyleClass().add("label-title");
+        Label subtitle = new Label("Manage plugins in the GitHub repository.");
+        subtitle.getStyleClass().add("label-subtitle");
+        
+        PasswordField txtPass = new PasswordField();
+        txtPass.setPromptText("Enter passphrase to clone the AppStore");
+        txtPass.setText(globalPassphrase);
+        
+        Button btnLoad = new Button("🌐 Load AppStore");
+        btnLoad.getStyleClass().add("cyber-btn");
+        
+        ScrollPane cardsScroll = new ScrollPane();
+        cardsScroll.setFitToWidth(true);
+        cardsScroll.setPrefHeight(350);
+        
+        VBox cardsContainer = new VBox(15);
+        cardsScroll.setContent(cardsContainer);
+        
+        btnLoad.setOnAction(e -> {
+            String passphrase = txtPass.getText();
+            if (passphrase.isEmpty()) {
+                showAlert("Passphrase required", "Enter the master passphrase!");
+                return;
+            }
+            globalPassphrase = passphrase;
+            cardsContainer.getChildren().clear();
+            cardsContainer.getChildren().add(new Label("🔄 Connecting and cloning GitHub JettraAppStore..."));
+            
+            Thread thread = new Thread(() -> {
+                try {
+                    List<Map<String, String>> plugins = ListPluginsCommand.fetchPlugins(passphrase);
+                    Platform.runLater(() -> {
+                        cardsContainer.getChildren().clear();
+                        if (plugins.isEmpty()) {
+                            cardsContainer.getChildren().add(new Label("No available plugins found."));
+                            return;
+                        }
+                        
+                        for (Map<String, String> plugin : plugins) {
+                            VBox card = new VBox(8);
+                            card.getStyleClass().add("glass-card");
+                            
+                            Label lblName = new Label(plugin.getOrDefault("Name", "Unnamed Plugin"));
+                            lblName.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #06b6d4;");
+                            
+                            Label lblMeta = new Label("Artifact ID: " + plugin.getOrDefault("Artifactid", "") + 
+                                    " | Version: " + plugin.getOrDefault("Versión", ""));
+                            lblMeta.setStyle("-fx-font-size: 11px; -fx-text-fill: #94a3b8;");
+                            
+                            Button btnDelete = new Button("🗑️ Delete from AppStore");
+                            btnDelete.getStyleClass().add("cyber-btn-danger");
+                            
+                            btnDelete.setOnAction(ev -> {
+                                btnDelete.setDisable(true);
+                                btnDelete.setText("Deleting...");
+                                
+                                Thread deleteThread = new Thread(() -> {
+                                    try {
+                                        deletePluginFromAppStore(plugin.get("Artifactid"), plugin.get("Versión"), passphrase);
+                                        Platform.runLater(() -> {
+                                            btnLoad.fire(); // Reload
+                                            showAlert("Deleted", "Plugin deleted successfully from AppStore.");
+                                        });
+                                    } catch (Exception ex) {
+                                        Platform.runLater(() -> {
+                                            btnDelete.setDisable(false);
+                                            btnDelete.setText("🗑️ Delete from AppStore");
+                                            showAlert("Deletion Failed", ex.getMessage());
+                                        });
+                                    }
+                                });
+                                deleteThread.setDaemon(true);
+                                deleteThread.start();
+                            });
+                            
+                            card.getChildren().addAll(lblName, lblMeta, btnDelete);
+                            cardsContainer.getChildren().add(card);
+                        }
+                    });
+                } catch (Exception ex) {
+                    Platform.runLater(() -> {
+                        cardsContainer.getChildren().clear();
+                        cardsContainer.getChildren().add(new Label("❌ Error: " + ex.getMessage()));
+                    });
+                }
+            });
+            thread.setDaemon(true);
+            thread.start();
+        });
+        
+        root.getChildren().addAll(title, subtitle, new Label("Enter passphrase:"), txtPass, btnLoad, cardsScroll);
+        switchContent(root);
+    }
+
+    private void deletePluginFromAppStore(String artifactId, String version, String passphrase) throws Exception {
+        String[] creds = CredentialsManager.loadCredentials(passphrase);
+        if (creds == null) throw new Exception("Invalid credentials");
+        String user = creds[0];
+        String pat = creds[1];
+
+        Path cloneDir = Files.createTempDirectory("jettra-appstore-del");
+        try (org.eclipse.jgit.api.Git git = com.jettrapluginstore.utils.GitUtils.cloneRepository(cloneDir)) {
+            // Remove the directory
+            Path pluginDir = cloneDir.resolve(artifactId).resolve(version);
+            if (Files.exists(pluginDir)) {
+                com.jettrapluginstore.utils.GitUtils.deleteDirectory(pluginDir.toFile());
+            }
+
+            // Remove from db/plugin-db.md
+            Path dbPath = cloneDir.resolve("db/plugin-db.md");
+            if (Files.exists(dbPath)) {
+                List<String> lines = Files.readAllLines(dbPath, StandardCharsets.UTF_8);
+                List<String> newLines = new ArrayList<>();
+                if (!lines.isEmpty()) newLines.add(lines.get(0)); // header
+                for (int i = 1; i < lines.size(); i++) {
+                    String line = lines.get(i);
+                    String[] parts = line.split(",");
+                    if (parts.length > 3) {
+                        String lineArtifact = parts[1].trim();
+                        String lineVersion = parts[3].trim();
+                        if (!lineArtifact.equalsIgnoreCase(artifactId) || !lineVersion.equalsIgnoreCase(version)) {
+                            newLines.add(line);
+                        }
+                    } else {
+                        newLines.add(line);
+                    }
+                }
+                Files.write(dbPath, newLines, StandardCharsets.UTF_8);
+            }
+
+            com.jettrapluginstore.utils.GitUtils.commitAndPush(git, user, pat, "Delete plugin " + artifactId + " v" + version);
+        } finally {
+            com.jettrapluginstore.utils.GitUtils.deleteDirectory(cloneDir.toFile());
+        }
     }
     
     // --- 6. Settings Pane ---
