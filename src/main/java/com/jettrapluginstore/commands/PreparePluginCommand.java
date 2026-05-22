@@ -1,6 +1,7 @@
 package com.jettrapluginstore.commands;
 
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -18,12 +19,16 @@ import java.util.concurrent.Callable;
 @Command(name = "prepareplugin", description = "Generates the plugin-descriptor.md file in the current project.")
 public class PreparePluginCommand implements Callable<Integer> {
 
+    @Option(names = {"-d", "--dir"}, description = "Target Jettra project directory (defaults to current directory)")
+    private String targetDir = ".";
+
     @Override
     public Integer call() throws Exception {
-        System.out.println("Preparing plugin...");
-        File pomFile = new File("pom.xml");
+        System.out.println("Preparing plugin in directory: " + targetDir);
+        File baseDir = new File(targetDir);
+        File pomFile = new File(baseDir, "pom.xml");
         if (!pomFile.exists()) {
-            System.err.println("Error: pom.xml not found in the current directory. Are you in a Maven project?");
+            System.err.println("Error: pom.xml not found in directory: " + targetDir + ". Are you in a Maven project?");
             return 1;
         }
 
@@ -56,8 +61,9 @@ public class PreparePluginCommand implements Callable<Integer> {
         sb.append("Dependencies: jettraServer, JettraReport, JettraWUI\n");
         sb.append("DateTime: ").append(dateTime).append("\n");
 
-        Files.write(Paths.get("plugin-descriptor.md"), sb.toString().getBytes(StandardCharsets.UTF_8));
-        System.out.println("Created plugin-descriptor.md successfully.");
+        File outFile = new File(baseDir, "plugin-descriptor.md");
+        Files.write(outFile.toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));
+        System.out.println("Created plugin-descriptor.md successfully at: " + outFile.getAbsolutePath());
 
         return 0;
     }

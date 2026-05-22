@@ -14,9 +14,9 @@ mvn clean package
 if [ $? -eq 0 ]; then
     echo "========================================="
     echo "✅ Construcción exitosa."
-    echo "El archivo ejecutable JAR se encuentra en:"
-    echo "target/JettraPluginStore-1.0-SNAPSHOT.jar"
+    echo "Iniciando la interfaz gráfica futurista de JavaFX..."
     echo "========================================="
+    java -jar target/JettraPluginStore-1.0-SNAPSHOT.jar --gui
 else
     echo "========================================="
     echo "❌ Error durante la compilación."

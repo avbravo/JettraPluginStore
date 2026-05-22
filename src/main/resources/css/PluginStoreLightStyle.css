@@ -1,0 +1,212 @@
+/* Futuristic Cyberpunk Light Glassmorphism Stylesheet for JettraPluginStore Dashboard */
+
+.root {
+    -fx-background-color: radial-gradient(center 50% 50%, radius 100%, #f8fafc 0%, #e2e8f0 100%);
+    -fx-font-family: 'Outfit', 'Inter', 'Segoe UI', Helvetica, sans-serif;
+    -fx-text-fill: #0f172a;
+}
+
+/* ScrollPane */
+.scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Buttons */
+.button {
+    -fx-cursor: hand;
+}
+
+.cyber-btn {
+    -fx-background-color: linear-gradient(to right, #0891b2, #2563eb);
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 22px;
+    -fx-effect: dropshadow(three-pass-box, rgba(8, 145, 178, 0.2), 8, 0, 0, 0);
+    -fx-font-size: 13px;
+    -fx-transition: all 0.3s ease;
+}
+.cyber-btn:hover {
+    -fx-background-color: linear-gradient(to right, #2563eb, #0891b2);
+    -fx-effect: dropshadow(three-pass-box, rgba(8, 145, 178, 0.4), 12, 0, 0, 0);
+}
+.cyber-btn:pressed {
+    -fx-scale-x: 0.95;
+    -fx-scale-y: 0.95;
+}
+
+.cyber-btn-secondary {
+    -fx-background-color: rgba(0, 0, 0, 0.02);
+    -fx-text-fill: #0891b2;
+    -fx-border-color: rgba(8, 145, 178, 0.4);
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 22px;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+.cyber-btn-secondary:hover {
+    -fx-background-color: rgba(8, 145, 178, 0.06);
+    -fx-border-color: #0891b2;
+}
+
+.cyber-btn-danger {
+    -fx-background-color: linear-gradient(to right, #f43f5e, #e11d48);
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8px;
+    -fx-padding: 10px 22px;
+    -fx-effect: dropshadow(three-pass-box, rgba(244, 63, 94, 0.2), 8, 0, 0, 0);
+    -fx-font-size: 13px;
+}
+.cyber-btn-danger:hover {
+    -fx-background-color: linear-gradient(to right, #e11d48, #f43f5e);
+    -fx-effect: dropshadow(three-pass-box, rgba(244, 63, 94, 0.4), 12, 0, 0, 0);
+}
+
+/* Sidebar navigation */
+.sidebar {
+    -fx-background-color: rgba(255, 255, 255, 0.8);
+    -fx-border-color: rgba(0, 0, 0, 0.05);
+    -fx-border-width: 0 1px 0 0;
+    -fx-padding: 20px 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.02), 5, 0, 2, 0);
+}
+
+.sidebar-brand {
+    -fx-text-fill: linear-gradient(to right, #0891b2, #6d28d9);
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 25px 10px;
+}
+
+.sidebar-btn {
+    -fx-background-color: transparent;
+    -fx-text-fill: #475569;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 12px 16px;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6px;
+    -fx-cursor: hand;
+}
+.sidebar-btn:hover {
+    -fx-text-fill: #0891b2;
+    -fx-background-color: rgba(8, 145, 178, 0.04);
+}
+.sidebar-btn-active {
+    -fx-text-fill: #0891b2;
+    -fx-background-color: rgba(8, 145, 178, 0.08);
+    -fx-border-color: #0891b2;
+    -fx-border-width: 0 0 0 3px;
+}
+
+/* Standard Inputs */
+.text-field {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #0f172a;
+    -fx-border-color: rgba(0, 0, 0, 0.08);
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+    -fx-padding: 10px 14px;
+    -fx-font-size: 13px;
+}
+.text-field:focused {
+    -fx-border-color: #0891b2;
+    -fx-effect: dropshadow(three-pass-box, rgba(8, 145, 178, 0.1), 6, 0, 0, 0);
+}
+
+.label-title {
+    -fx-text-fill: #0f172a;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 10px 0;
+}
+
+.label-subtitle {
+    -fx-text-fill: #475569;
+    -fx-font-size: 13px;
+    -fx-padding: 0 0 20px 0;
+}
+
+.form-label {
+    -fx-text-fill: #334155;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 0 6px 0;
+}
+
+/* Panels and Cards */
+.glass-pane {
+    -fx-background-color: rgba(255, 255, 255, 0.7);
+    -fx-border-color: rgba(0, 0, 0, 0.04);
+    -fx-border-radius: 12px;
+    -fx-background-radius: 12px;
+    -fx-padding: 24px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.03), 15, 0, 0, 8);
+}
+
+.glass-card {
+    -fx-background-color: rgba(255, 255, 255, 0.9);
+    -fx-border-color: rgba(8, 145, 178, 0.12);
+    -fx-border-radius: 10px;
+    -fx-background-radius: 10px;
+    -fx-padding: 18px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0, 0, 0, 0.02), 10, 0, 0, 4);
+}
+.glass-card:hover {
+    -fx-border-color: #7c3aed; /* purple */
+    -fx-background-color: #ffffff;
+    -fx-effect: dropshadow(three-pass-box, rgba(124, 58, 237, 0.08), 15, 0, 0, 0);
+}
+
+/* Terminal View */
+.cyber-terminal {
+    -fx-background-color: #0f172a;
+    -fx-border-color: rgba(8, 145, 178, 0.2);
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-padding: 15px;
+    -fx-font-family: 'Consolas', 'Courier New', monospace;
+    -fx-font-size: 12px;
+    -fx-text-fill: #34d399; /* emerald */
+}
+
+/* Combo Box */
+.combo-box {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #0f172a;
+    -fx-border-color: rgba(0, 0, 0, 0.08);
+    -fx-border-radius: 6px;
+    -fx-background-radius: 6px;
+}
+.combo-box .cell {
+    -fx-text-fill: #0f172a;
+}
+.combo-box .arrow-button {
+    -fx-background-color: transparent;
+}
+.combo-box .arrow {
+    -fx-background-color: #475569;
+}
+
+/* Scroll bar styling */
+.scroll-bar:vertical {
+    -fx-background-color: transparent;
+    -fx-width: 8px;
+}
+.scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(0, 0, 0, 0.06);
+    -fx-background-radius: 4px;
+}
+.scroll-bar:vertical .thumb:hover {
+    -fx-background-color: #0891b2;
+}
+.scroll-bar:vertical .increment-button, .scroll-bar:vertical .decrement-button {
+    -fx-background-color: transparent;
+}

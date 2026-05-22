@@ -27,7 +27,26 @@ public class Main implements Callable<Integer> {
     private String legacyCommand;
 
     public static void main(String... args) {
-        if (args.length == 0) {
+        boolean launchGui = false;
+        List<String> remainingArgs = new ArrayList<>();
+        for (String arg : args) {
+            if ("-gui".equalsIgnoreCase(arg) || "--gui".equalsIgnoreCase(arg)) {
+                launchGui = true;
+            } else {
+                remainingArgs.add(arg);
+            }
+        }
+
+        if (launchGui) {
+            System.out.println("Launching Cybernetic JavaFX Control Panel...");
+            com.jettrapluginstore.gui.PluginStoreApp.launchApp(remainingArgs.toArray(new String[0]));
+            System.exit(0);
+        } else if (args.length == 0) {
+            System.out.println("=====================================================================");
+            System.out.println("JETTRA PLUGIN STORE CYBERNETIC PANEL");
+            System.out.println("-> To launch the futuristic graphical GUI interface, run: jettrapluginstore --gui");
+            System.out.println("-> Launching Interactive Shell by default...");
+            System.out.println("=====================================================================\n");
             startInteractiveShell();
             System.exit(0);
         } else {

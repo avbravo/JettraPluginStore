@@ -249,3 +249,86 @@ jettrapluginstore> exit
 $
 ```
 Gracias a este modo, ahorras el tiempo de inicialización de la herramienta entre cada comando sucesivo.
+
+---
+
+## 💻 Panel de Control Gráfico Futurista (JavaFX)
+
+JettraPluginStore ahora incorpora una impresionante interfaz gráfica de usuario (**JavaFX GUI**) diseñada con una estética **cyberpunk y glassmorphism** premium. Está optimizada con paneles translúcidos de fondo, bordes brillantes con neones en tonos cian y morado, animaciones de hover y una terminal HUD integrada que reporta el flujo de compilación y subida en tiempo real.
+
+### Características Clave de la Interfaz Gráfica:
+- **Workspace Dashboard**: Permite seleccionar interactivamente cualquier directorio en disco mediante un explorador de archivos nativo, detectando automáticamente si contiene un proyecto Jettra-Maven válido y parseando su información del `pom.xml`.
+- **Formulario Descriptor**: Permite editar de forma visual los campos clave de tu plugin (`Autor`, `Nombre`, `Sitio Web`, `Descripción`, `Dependencias`) para generar con un clic tu archivo `plugin-descriptor.md`.
+- **Package & Upload**: Analiza dinámicamente tu código y ofrece un selector desplegable con todos los paquetes Java detectados en tu proyecto para aislarlos, refactorizarlos e iniciar la subida cifrada.
+- **Tienda JettraAppStore**: Clona la tienda de forma interna, analiza los plugins y expone un catálogo de tarjetas interactivas donde puedes instalar cualquier plugin en **un solo clic**, advirtiéndote además de conflictos de rutas y sugiriéndote cambios de nombre antes de integrarlos.
+- **Gestión Local**: Visualiza reportes detallados de instalación (`plugin-result.md`) y remueve cualquier plugin devolviendo el proyecto base a su estado original (removiendo menús, dependencias del pom, handlers de rutas y borrando los paquetes físicos).
+- **Locker de Credenciales**: Guarda tus tokens y usuarios de GitHub encriptados de forma segura mediante un formulario protegido con tu clave maestra AES.
+
+### Ejecución Directa de la GUI
+Para lanzar el panel de control gráfico, simplemente añade el parámetro `--gui` (o `-gui`) al invocar el JAR:
+
+```bash
+java -jar target/JettraPluginStore-1.0-SNAPSHOT.jar --gui
+```
+
+---
+
+## 🛠️ Script de Automatización `build.sh`
+
+Para agilizar el desarrollo, hemos diseñado el script de automatización `build.sh` en la raíz del proyecto. Este script realiza dos tareas clave en un único paso:
+1. Limpia y compila el proyecto generando el fat ejecutable "shaded jar".
+2. Inicia de manera inmediata el Panel de Control Gráfico de JavaFX.
+
+Para ejecutarlo, simplemente corre:
+
+```bash
+chmod +x build.sh
+./build.sh
+```
+
+---
+
+## 🐳 Empaquetamiento y Distribución con Docker
+
+Hemos creado un archivo `Dockerfile` optimizado en la raíz del proyecto para empaquetar de manera robusta la herramienta en una imagen Docker ligera y autónoma, incluyendo las dependencias nativas de gráficos GTK y X11 necesarias para inicializar JavaFX.
+
+### Paso 1: Construcción de la Imagen Docker
+Ejecuta la construcción en la raíz del proyecto donde se encuentra el `Dockerfile`:
+
+```bash
+docker build -t jettrapluginstore .
+```
+
+### Paso 2: Ejecución del Contenedor
+
+#### A) Modo Shell Interactivo o CLI (Sin GUI)
+Para ejecutar la herramienta en modo consola interactiva montando tu proyecto de trabajo actual (`$(pwd)`) en el directorio `/app` del contenedor:
+
+```bash
+docker run -it -v $(pwd):/app jettrapluginstore
+```
+
+#### B) Modo Panel de Control Gráfico (Con JavaFX GUI)
+Para reenviar la interfaz gráfica del contenedor hacia el servidor de visualización X11 de tu máquina anfitriona (Linux):
+
+1. **Permitir conexiones locales al servidor X11:**
+   ```bash
+   xhost +local:docker
+   ```
+
+2. **Ejecutar el contenedor con reenvío de pantalla y montando el volumen:**
+   ```bash
+   docker run -it \
+     --net=host \
+     -v /tmp/.X11-unix:/tmp/.X11-unix \
+     -e DISPLAY=$DISPLAY \
+     -v $(pwd):/app \
+     jettrapluginstore --gui
+   ```
+
+3. **Restablecer la seguridad de tu servidor X11 una vez que cierres la aplicación:**
+   ```bash
+   xhost -local:docker
+   ```
+
+Gracias a esta configuración de Docker, cualquier desarrollador puede compilar, distribuir y utilizar la herramienta JettraPluginStore de manera consistente sin preocuparse de configurar variables de entorno o librerías nativas JavaFX localmente.

@@ -47,8 +47,8 @@ public class ProjectModifier {
 
             for (Path file : files) {
                 String content = new String(Files.readAllBytes(file), StandardCharsets.UTF_8);
-                content = content.replace("package " + oldPackage, "package " + newPackage);
-                content = content.replace("import " + oldPackage, "import " + newPackage);
+                // Replace all fully-qualified class references, imports, and package statements
+                content = content.replace(oldPackage, newPackage);
                 Files.write(file, content.getBytes(StandardCharsets.UTF_8));
             }
         }
@@ -59,11 +59,22 @@ public class ProjectModifier {
         
         if (Files.exists(oldPathFull) && !oldPathFull.equals(newPathFull)) {
             Files.createDirectories(newPathFull.getParent());
-            // Since moving directories can be tricky if they overlap, we could just copy and delete, 
-            // but for simplicity in this example we assume it's just moving content.
-            // Using a simple move might fail if paths overlap, so copying is safer.
             copyDirectory(oldPathFull.toFile(), newPathFull.toFile());
             GitUtils.deleteDirectory(oldPathFull.toFile());
+        }
+    }
+
+    public static void prefixAllMessages(Path resourcesDir, String artifactId) throws IOException {
+        if (!Files.exists(resourcesDir)) {
+            return;
+        }
+        try (Stream<Path> stream = Files.walk(resourcesDir)) {
+            List<Path> propFiles = stream.filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().startsWith("messages") && p.getFileName().toString().endsWith(".properties"))
+                    .collect(Collectors.toList());
+            for (Path propFile : propFiles) {
+                prefixMessages(propFile, artifactId);
+            }
         }
     }
 
@@ -73,8 +84,10 @@ public class ProjectModifier {
                 targetDir.mkdirs();
             }
             String[] children = sourceDir.list();
-            for (int i = 0; i < children.length; i++) {
-                copyDirectory(new File(sourceDir, children[i]), new File(targetDir, children[i]));
+            if (children != null) {
+                for (String child : children) {
+                    copyDirectory(new File(sourceDir, child), new File(targetDir, child));
+                }
             }
         } else {
             Files.copy(sourceDir.toPath(), targetDir.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
