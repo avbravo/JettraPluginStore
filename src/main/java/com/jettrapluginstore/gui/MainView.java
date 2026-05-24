@@ -305,12 +305,57 @@ public class MainView extends BorderPane {
         TextField txtJavaVersion = new TextField("25");
         TextField txtDeps = new TextField("JettraServer, JettraWUI, JettraReport");
         
+        GridPane gridDeps = new GridPane();
+        gridDeps.setHgap(15);
+        gridDeps.setVgap(10);
+        gridDeps.setPadding(new Insets(5, 0, 5, 0));
+
+        String[] allPlugins = {
+            "JettraServer", "JettraWUI", "JettraReport", 
+            "JettraRules", "JettraJWT", "JettraRest", 
+            "JettraGRPC", "JettraCompactFile", "JettraChunks", 
+            "JettraFileManager", "JettraICore"
+        };
+        
+        List<CheckBox> checkBoxes = new ArrayList<>();
+        int col = 0;
+        int row = 0;
+        for (String p : allPlugins) {
+            CheckBox cb = new CheckBox(p);
+            cb.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 13px;");
+            if (p.equals("JettraServer") || p.equals("JettraWUI") || p.equals("JettraReport")) {
+                cb.setSelected(true);
+            }
+            checkBoxes.add(cb);
+            gridDeps.add(cb, col, row);
+            col++;
+            if (col > 2) {
+                col = 0;
+                row++;
+            }
+        }
+
+        Runnable updateDepsText = () -> {
+            List<String> selected = new ArrayList<>();
+            for (CheckBox cb : checkBoxes) {
+                if (cb.isSelected()) {
+                    selected.add(cb.getText());
+                }
+            }
+            txtDeps.setText(String.join(", ", selected));
+        };
+        
+        for (CheckBox cb : checkBoxes) {
+            cb.selectedProperty().addListener((obs, oldVal, newVal) -> updateDepsText.run());
+        }
+
         form.getChildren().addAll(
                 new Label("GroupId:"), txtGroup,
                 new Label("ArtifactId:"), txtArtifact,
                 new Label("Version:"), txtVersion,
                 new Label("Java Version:"), txtJavaVersion,
-                new Label("Dependencies (comma separated):"), txtDeps,
+                new Label("Selected Dependencies:"), txtDeps,
+                new Label("Choose Plugins:"), gridDeps,
                 new Separator()
         );
         
