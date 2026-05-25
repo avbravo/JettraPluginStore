@@ -15,6 +15,9 @@ public class ProjectGenerator {
             projectDir.mkdirs();
         }
 
+        boolean genFront = properties.containsKey("gen.frontend") ? Boolean.parseBoolean(properties.get("gen.frontend")) : true;
+        boolean genBack = properties.containsKey("gen.backend") ? Boolean.parseBoolean(properties.get("gen.backend")) : true;
+
         // 1. pom.xml
         generatePom(projectDir, groupId, artifactId, version, javaVersion, dependencies);
 
@@ -33,39 +36,55 @@ public class ProjectGenerator {
         basePackageDir.mkdirs();
 
         // Main.java
-        generateMain(basePackageDir, groupId);
+        generateMain(basePackageDir, groupId, genFront, genBack);
 
-        // dashboard package
-        File dashboardDir = new File(basePackageDir, "dashboard");
-        dashboardDir.mkdirs();
-        generateDashboardBase(dashboardDir, groupId);
-        generateDashboard(dashboardDir, groupId);
+        if (genFront) {
+            // dashboard package
+            File dashboardDir = new File(basePackageDir, "dashboard");
+            dashboardDir.mkdirs();
+            generateDashboardBase(dashboardDir, groupId);
+            generateDashboard(dashboardDir, groupId);
 
-        // pages package
-        File pagesDir = new File(basePackageDir, "pages");
-        pagesDir.mkdirs();
-        generateLogin(pagesDir, groupId);
-        generateLoginAdvanced(pagesDir, groupId);
+            // pages package
+            File pagesDir = new File(basePackageDir, "pages");
+            pagesDir.mkdirs();
+            generateLogin(pagesDir, groupId);
+            generateLoginAdvanced(pagesDir, groupId);
 
-        // entity package
-        File entityDir = new File(basePackageDir, "entity");
-        entityDir.mkdirs();
-        generateEntities(entityDir, groupId);
+            // pages/admin package
+            File adminPagesDir = new File(pagesDir, "admin");
+            adminPagesDir.mkdirs();
+            generateAdminPages(adminPagesDir, groupId);
+        }
 
-        // model package
-        File modelDir = new File(basePackageDir, "model");
-        modelDir.mkdirs();
-        generateModels(modelDir, groupId);
+        if (genFront || genBack) {
+            // entity package
+            File entityDir = new File(basePackageDir, "entity");
+            entityDir.mkdirs();
+            generateEntities(entityDir, groupId);
 
-        // repository package
-        File repositoryDir = new File(basePackageDir, "repository");
-        repositoryDir.mkdirs();
-        generateRepositories(repositoryDir, groupId);
+            // model package
+            File modelDir = new File(basePackageDir, "model");
+            modelDir.mkdirs();
+            generateModels(modelDir, groupId);
 
-        // pages/admin package
-        File adminPagesDir = new File(pagesDir, "admin");
-        adminPagesDir.mkdirs();
-        generateAdminPages(adminPagesDir, groupId);
+            // repository package
+            File repositoryDir = new File(basePackageDir, "repository");
+            repositoryDir.mkdirs();
+            generateRepositories(repositoryDir, groupId);
+        }
+
+        if (genBack) {
+            // controller package
+            File controllerDir = new File(basePackageDir, "controller");
+            controllerDir.mkdirs();
+            generateControllers(controllerDir, groupId);
+
+            // seguridad package
+            File securityDir = new File(basePackageDir, "seguridad");
+            securityDir.mkdirs();
+            generateSecurity(securityDir, groupId);
+        }
         
         // README.md
         generateReadme(projectDir, artifactId);
@@ -184,16 +203,22 @@ public class ProjectGenerator {
         Files.write(new File(resourcesDir, "messages.properties").toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));
     }
 
-    private static void generateMain(File pkgDir, String groupId) throws IOException {
+    private static void generateMain(File pkgDir, String groupId, boolean genFront, boolean genBack) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append("package ").append(groupId).append(";\n\n");
-        sb.append("import ").append(groupId).append(".pages.LoginPage;\n");
-        sb.append("import ").append(groupId).append(".pages.LoginAdvancedPage;\n");
-        sb.append("import ").append(groupId).append(".dashboard.DashboardPage;\n");
-        sb.append("import ").append(groupId).append(".pages.admin.PermisoPage;\n");
-        sb.append("import ").append(groupId).append(".pages.admin.RolPage;\n");
-        sb.append("import ").append(groupId).append(".pages.admin.PerfilPage;\n");
-        sb.append("import ").append(groupId).append(".pages.admin.UsuarioPage;\n");
+        if (genFront) {
+            sb.append("import ").append(groupId).append(".pages.LoginPage;\n");
+            sb.append("import ").append(groupId).append(".pages.LoginAdvancedPage;\n");
+            sb.append("import ").append(groupId).append(".dashboard.DashboardPage;\n");
+            sb.append("import ").append(groupId).append(".pages.admin.PermisoPage;\n");
+            sb.append("import ").append(groupId).append(".pages.admin.RolPage;\n");
+            sb.append("import ").append(groupId).append(".pages.admin.PerfilPage;\n");
+            sb.append("import ").append(groupId).append(".pages.admin.UsuarioPage;\n");
+        }
+        if (genBack) {
+            sb.append("import ").append(groupId).append(".controller.AuthController;\n");
+            sb.append("import ").append(groupId).append(".controller.UsuarioController;\n");
+        }
         sb.append("import com.jettra.server.JettraServer;\n");
         sb.append("import com.jettra.server.config.JettraConfigProperty;\n");
         sb.append("import com.jettra.server.config.ConfigInjector;\n\n");
@@ -211,20 +236,37 @@ public class ProjectGenerator {
         sb.append("    public static void main(String[] args) {\n");
         sb.append("        Main app = new Main();\n");
         sb.append("        app.initUI();\n\n");
-        sb.append("        io.jettra.wui.complex.ErrorPage.path = \"http://localhost:\" + app.port + app.contextpath;\n\n");
+        if (genFront) {
+            sb.append("        io.jettra.wui.complex.ErrorPage.path = \"http://localhost:\" + app.port + app.contextpath;\n\n");
+        }
         sb.append("        System.out.println(\"Starting JettraServer...\");\n");
         sb.append("        JettraServer server = new JettraServer();\n");
-        sb.append("        server.setErrorPage(\"/error\");\n\n");
-        sb.append("        server.addHandler(\"/error\", io.jettra.wui.complex.ErrorPage.class);\n");
-        sb.append("        server.addHandler(\"/\", LoginPage.class);\n");
-        sb.append("        server.addHandler(\"/login\", LoginPage.class);\n");
-        sb.append("        server.addHandler(\"/logout\", LoginPage.class);\n");
-        sb.append("        server.addHandler(\"/loginadvanced\", LoginAdvancedPage.class);\n");
-        sb.append("        server.addHandler(\"/dashboard\", DashboardPage.class);\n\n");
-        sb.append("        server.addHandler(\"/permiso\", PermisoPage.class);\n");
-        sb.append("        server.addHandler(\"/rol\", RolPage.class);\n");
-        sb.append("        server.addHandler(\"/perfil\", PerfilPage.class);\n");
-        sb.append("        server.addHandler(\"/usuario\", UsuarioPage.class);\n\n");
+        if (genFront) {
+            sb.append("        server.setErrorPage(\"/error\");\n\n");
+            sb.append("        server.addHandler(\"/error\", io.jettra.wui.complex.ErrorPage.class);\n");
+            sb.append("        server.addHandler(\"/\", LoginPage.class);\n");
+            sb.append("        server.addHandler(\"/login\", LoginPage.class);\n");
+            sb.append("        server.addHandler(\"/logout\", LoginPage.class);\n");
+            sb.append("        server.addHandler(\"/loginadvanced\", LoginAdvancedPage.class);\n");
+            sb.append("        server.addHandler(\"/dashboard\", DashboardPage.class);\n\n");
+            sb.append("        server.addHandler(\"/permiso\", PermisoPage.class);\n");
+            sb.append("        server.addHandler(\"/rol\", RolPage.class);\n");
+            sb.append("        server.addHandler(\"/perfil\", PerfilPage.class);\n");
+            sb.append("        server.addHandler(\"/usuario\", UsuarioPage.class);\n\n");
+        } else {
+            sb.append("        server.addHandler(\"/\", exchange -> {\n");
+            sb.append("            String response = \"{\\\"message\\\":\\\"Welcome to Jettra Backend REST API\\\",\\\"status\\\":\\\"online\\\"}\";\n");
+            sb.append("            exchange.getResponseHeaders().add(\"Content-Type\", \"application/json\");\n");
+            sb.append("            exchange.sendResponseHeaders(200, response.length());\n");
+            sb.append("            try (java.io.OutputStream os = exchange.getResponseBody()) {\n");
+            sb.append("                os.write(response.getBytes());\n");
+            sb.append("            }\n");
+            sb.append("        });\n\n");
+        }
+        if (genBack) {
+            sb.append("        server.addHandler(\"/api/auth\", AuthController.class);\n");
+            sb.append("        server.addHandler(\"/api/usuarios\", UsuarioController.class);\n\n");
+        }
         sb.append("        server.start();\n");
         sb.append("    }\n");
         sb.append("}\n");
@@ -487,5 +529,141 @@ public class ProjectGenerator {
         Files.write(new File(pkgDir, "RolPage.java").toPath(), (base + "@JettraPageSincronized(SyncType.ALL)\n@CrudView(model = " + groupId + ".model.RolModel.class, repository = " + groupId + ".repository.RolRepository.class, report = true, reportOrientation = \"LANDSCAPE\", reportTitle = \"REPORTE DE ROLES\", reportHeaderColor = \"#007BFF\")\npublic class RolPage extends DashboardBasePage {\n    @InjectProperties(name = \"messages\") private Properties msg;\n    public RolPage() { super(\"Mantenimiento de Roles\"); }\n    @Override protected void initCenter(Center center, String username) { }\n}\n").getBytes(StandardCharsets.UTF_8));
         Files.write(new File(pkgDir, "PerfilPage.java").toPath(), (base + "@JettraPageSincronized(SyncType.ALL)\n@CrudView(model = " + groupId + ".model.PerfilModel.class, repository = " + groupId + ".repository.PerfilRepository.class, report = true, reportOrientation = \"LANDSCAPE\", reportTitle = \"REPORTE DE PERFILES\", reportHeaderColor = \"#007BFF\")\npublic class PerfilPage extends DashboardBasePage {\n    @InjectProperties(name = \"messages\") private Properties msg;\n    public PerfilPage() { super(\"Mantenimiento de Perfiles\"); }\n    @Override protected void initCenter(Center center, String username) { }\n}\n").getBytes(StandardCharsets.UTF_8));
         Files.write(new File(pkgDir, "UsuarioPage.java").toPath(), (base + "@JettraPageSincronized(SyncType.ALL)\n@CrudView(model = " + groupId + ".model.UsuarioModel.class, repository = " + groupId + ".repository.UsuarioRepository.class, report = true, reportOrientation = \"LANDSCAPE\", reportTitle = \"REPORTE DE USUARIOS\", reportHeaderColor = \"#007BFF\")\npublic class UsuarioPage extends DashboardBasePage {\n    @InjectProperties(name = \"messages\") private Properties msg;\n    public UsuarioPage() { super(\"Mantenimiento de Usuarios\"); }\n    @Override protected void initCenter(Center center, String username) { }\n}\n").getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void generateControllers(File pkgDir, String groupId) throws IOException {
+        // UsuarioController.java
+        StringBuilder uc = new StringBuilder();
+        uc.append("package ").append(groupId).append(".controller;\n\n");
+        uc.append("import com.sun.net.httpserver.HttpExchange;\n");
+        uc.append("import com.sun.net.httpserver.HttpHandler;\n");
+        uc.append("import java.io.IOException;\n");
+        uc.append("import java.io.OutputStream;\n");
+        uc.append("import java.nio.charset.StandardCharsets;\n");
+        uc.append("import java.util.List;\n");
+        uc.append("import ").append(groupId).append(".repository.UsuarioRepository;\n");
+        uc.append("import ").append(groupId).append(".model.UsuarioModel;\n");
+        uc.append("import ").append(groupId).append(".seguridad.SecurityManager;\n\n");
+        uc.append("public class UsuarioController implements HttpHandler {\n");
+        uc.append("    @Override\n");
+        uc.append("    public void handle(HttpExchange exchange) throws IOException {\n");
+        uc.append("        // Verify JWT Security\n");
+        uc.append("        if (!SecurityManager.validateRequest(exchange)) {\n");
+        uc.append("            String err = \"{\\\"error\\\":\\\"Unauthorized - Invalid or missing JWT token\\\"}\";\n");
+        uc.append("            exchange.getResponseHeaders().add(\"Content-Type\", \"application/json\");\n");
+        uc.append("            exchange.sendResponseHeaders(401, err.getBytes(StandardCharsets.UTF_8).length);\n");
+        uc.append("            try (OutputStream os = exchange.getResponseBody()) {\n");
+        uc.append("                os.write(err.getBytes(StandardCharsets.UTF_8));\n");
+        uc.append("            }\n");
+        uc.append("            return;\n");
+        uc.append("        }\n\n");
+        uc.append("        String method = exchange.getRequestMethod();\n");
+        uc.append("        exchange.getResponseHeaders().add(\"Content-Type\", \"application/json\");\n\n");
+        uc.append("        if (\"GET\".equalsIgnoreCase(method)) {\n");
+        uc.append("            List<UsuarioModel> usuarios = UsuarioRepository.findAll();\n");
+        uc.append("            StringBuilder sb = new StringBuilder(\"[\");\n");
+        uc.append("            for (int i = 0; i < usuarios.size(); i++) {\n");
+        uc.append("                UsuarioModel u = usuarios.get(i);\n");
+        uc.append("                sb.append(String.format(\"{\\\"id\\\":\\\"%s\\\",\\\"username\\\":\\\"%s\\\",\\\"nombre\\\":\\\"%s\\\",\\\"email\\\":\\\"%s\\\",\\\"activo\\\":%b}\",\n");
+        uc.append("                        u.getId(), u.getUsername(), u.getNombre(), u.getEmail(), u.getActivo()));\n");
+        uc.append("                if (i < usuarios.size() - 1) sb.append(\",\");\n");
+        uc.append("            }\n");
+        uc.append("            sb.append(\"]\");\n");
+        uc.append("            byte[] bytes = sb.toString().getBytes(StandardCharsets.UTF_8);\n");
+        uc.append("            exchange.sendResponseHeaders(200, bytes.length);\n");
+        uc.append("            try (OutputStream os = exchange.getResponseBody()) {\n");
+        uc.append("                os.write(bytes);\n");
+        uc.append("            }\n");
+        uc.append("        } else {\n");
+        uc.append("            exchange.sendResponseHeaders(405, -1);\n");
+        uc.append("        }\n");
+        uc.append("    }\n");
+        uc.append("}\n");
+        Files.write(new File(pkgDir, "UsuarioController.java").toPath(), uc.toString().getBytes(StandardCharsets.UTF_8));
+
+        // AuthController.java
+        StringBuilder ac = new StringBuilder();
+        ac.append("package ").append(groupId).append(".controller;\n\n");
+        ac.append("import com.sun.net.httpserver.HttpExchange;\n");
+        ac.append("import com.sun.net.httpserver.HttpHandler;\n");
+        ac.append("import java.io.IOException;\n");
+        ac.append("import java.io.InputStream;\n");
+        ac.append("import java.io.OutputStream;\n");
+        ac.append("import java.nio.charset.StandardCharsets;\n");
+        ac.append("import ").append(groupId).append(".seguridad.SecurityManager;\n\n");
+        ac.append("public class AuthController implements HttpHandler {\n");
+        ac.append("    @Override\n");
+        ac.append("    public void handle(HttpExchange exchange) throws IOException {\n");
+        ac.append("        if (!\"POST\".equalsIgnoreCase(exchange.getRequestMethod())) {\n");
+        ac.append("            exchange.sendResponseHeaders(405, -1);\n");
+        ac.append("            return;\n");
+        ac.append("        }\n\n");
+        ac.append("        StringBuilder sb = new StringBuilder();\n");
+        ac.append("        try (InputStream is = exchange.getRequestBody()) {\n");
+        ac.append("            int i;\n");
+        ac.append("            while ((i = is.read()) != -1) {\n");
+        ac.append("                sb.append((char) i);\n");
+        ac.append("            }\n");
+        ac.append("        }\n");
+        ac.append("        String body = sb.toString();\n");
+        ac.append("        String username = extractJsonField(body, \"username\");\n");
+        ac.append("        String password = extractJsonField(body, \"password\");\n\n");
+        ac.append("        exchange.getResponseHeaders().add(\"Content-Type\", \"application/json\");\n\n");
+        ac.append("        if ((\"admin\".equals(username) && \"admin\".equals(password)) ||\n");
+        ac.append("            (\"demo\".equals(username) && \"demo\".equals(password))) {\n");
+        ac.append("            String token = SecurityManager.generateToken(username);\n");
+        ac.append("            String response = String.format(\"{\\\"token\\\":\\\"%s\\\",\\\"status\\\":\\\"success\\\"}\", token);\n");
+        ac.append("            byte[] bytes = response.getBytes(StandardCharsets.UTF_8);\n");
+        ac.append("            exchange.sendResponseHeaders(200, bytes.length);\n");
+        ac.append("            try (OutputStream os = exchange.getResponseBody()) {\n");
+        ac.append("                os.write(bytes);\n");
+        ac.append("            }\n");
+        ac.append("        } else {\n");
+        ac.append("            String response = \"{\\\"error\\\":\\\"Invalid credentials\\\",\\\"status\\\":\\\"failure\\\"}\";\n");
+        ac.append("            byte[] bytes = response.getBytes(StandardCharsets.UTF_8);\n");
+        ac.append("            exchange.sendResponseHeaders(401, bytes.length);\n");
+        ac.append("            try (OutputStream os = exchange.getResponseBody()) {\n");
+        ac.append("                os.write(bytes);\n");
+        ac.append("            }\n");
+        ac.append("        }\n");
+        ac.append("    }\n\n");
+        ac.append("    private String extractJsonField(String json, String field) {\n");
+        ac.append("        String search = \"\\\"\" + field + \"\\\":\\\"\";\n");
+        ac.append("        int start = json.indexOf(search);\n");
+        ac.append("        if (start == -1) return \"\";\n");
+        ac.append("        start += search.length();\n");
+        ac.append("        int end = json.indexOf(\"\\\"\", start);\n");
+        ac.append("        if (end == -1) return \"\";\n");
+        ac.append("        return json.substring(start, end);\n");
+        ac.append("    }\n");
+        ac.append("}\n");
+        Files.write(new File(pkgDir, "AuthController.java").toPath(), ac.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static void generateSecurity(File pkgDir, String groupId) throws IOException {
+        StringBuilder sc = new StringBuilder();
+        sc.append("package ").append(groupId).append(".seguridad;\n\n");
+        sc.append("import com.jettra.jwt.JettraJWT;\n");
+        sc.append("import com.sun.net.httpserver.HttpExchange;\n\n");
+        sc.append("public class SecurityManager {\n");
+        sc.append("    private static final JettraJWT jwt = new JettraJWT(\"my-super-secret-key-1234567890-jettra-token-secret\", 3600000);\n\n");
+        sc.append("    public static String generateToken(String username) {\n");
+        sc.append("        return jwt.generateToken(username);\n");
+        sc.append("    }\n\n");
+        sc.append("    public static boolean validateRequest(HttpExchange exchange) {\n");
+        sc.append("        String authHeader = exchange.getRequestHeaders().getFirst(\"Authorization\");\n");
+        sc.append("        if (authHeader != null && authHeader.startsWith(\"Bearer \")) {\n");
+        sc.append("            String token = authHeader.substring(7);\n");
+        sc.append("            try {\n");
+        sc.append("                String username = jwt.extractUsername(token);\n");
+        sc.append("                return jwt.isTokenValid(token, username);\n");
+        sc.append("            } catch (Exception e) {\n");
+        sc.append("                return false;\n");
+        sc.append("            }\n");
+        sc.append("        }\n");
+        sc.append("        return false;\n");
+        sc.append("    }\n");
+        sc.append("}\n");
+        Files.write(new File(pkgDir, "SecurityManager.java").toPath(), sc.toString().getBytes(StandardCharsets.UTF_8));
     }
 }

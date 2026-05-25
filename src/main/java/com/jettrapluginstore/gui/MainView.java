@@ -349,6 +349,36 @@ public class MainView extends BorderPane {
             cb.selectedProperty().addListener((obs, oldVal, newVal) -> updateDepsText.run());
         }
 
+        Label lblType = new Label("Type:");
+        lblType.setStyle("-fx-font-weight: bold; -fx-text-fill: #06b6d4;");
+        CheckBox chkFrontEnd = new CheckBox("Front-End");
+        chkFrontEnd.setSelected(true);
+        chkFrontEnd.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 13px;");
+        CheckBox chkBackEnd = new CheckBox("Back-End");
+        chkBackEnd.setSelected(true);
+        chkBackEnd.setStyle("-fx-text-fill: #e2e8f0; -fx-font-size: 13px;");
+        HBox typeBox = new HBox(20, chkFrontEnd, chkBackEnd);
+
+        chkFrontEnd.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                for (CheckBox cb : checkBoxes) {
+                    if (cb.getText().equals("JettraWUI") || cb.getText().equals("JettraServer")) {
+                        cb.setSelected(true);
+                    }
+                }
+            }
+        });
+
+        chkBackEnd.selectedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                for (CheckBox cb : checkBoxes) {
+                    if (cb.getText().equals("JettraJWT") || cb.getText().equals("JettraServer")) {
+                        cb.setSelected(true);
+                    }
+                }
+            }
+        });
+
         form.getChildren().addAll(
                 new Label("GroupId:"), txtGroup,
                 new Label("ArtifactId:"), txtArtifact,
@@ -356,6 +386,7 @@ public class MainView extends BorderPane {
                 new Label("Java Version:"), txtJavaVersion,
                 new Label("Selected Dependencies:"), txtDeps,
                 new Label("Choose Plugins:"), gridDeps,
+                lblType, typeBox,
                 new Separator()
         );
         
@@ -451,6 +482,8 @@ public class MainView extends BorderPane {
                 props.put("app.theme", txtTheme.getText());
                 props.put("app.animated", String.valueOf(chkAnimated.isSelected()));
                 props.put("server.hotreload", String.valueOf(chkHotReload.isSelected()));
+                props.put("gen.frontend", String.valueOf(chkFrontEnd.isSelected()));
+                props.put("gen.backend", String.valueOf(chkBackEnd.isSelected()));
                 
                 com.jettrapluginstore.utils.ProjectGenerator.generateProject(
                         targetDirectory[0], 
